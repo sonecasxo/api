@@ -1,4 +1,3 @@
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -6,17 +5,28 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 10000;
 
+// Configuração CORS
 app.use(cors({
-  origin: true,
+  origin: "https://sonecasxo.github.io",
   methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type"],
+  optionsSuccessStatus: 204
 }));
 
-app.options(/.*/, cors());
-
+// Recebimento de JSON
 app.use(express.json({ limit: "100kb" }));
 
+// Rota de teste
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    message: "Servidor Encontro de Superações funcionando!"
+  });
+});
+
+// Assistente de acolhimento
 app.post("/api/chat", async (req, res) => {
   try {
     const messages = req.body.messages;
@@ -32,7 +42,10 @@ app.post("/api/chat", async (req, res) => {
         throw new Error("Papel de mensagem inválido.");
       }
 
-      if (typeof msg.content !== "string" || msg.content.length > 4000) {
+      if (
+        typeof msg.content !== "string" ||
+        msg.content.length > 4000
+      ) {
         throw new Error("Mensagem inválida.");
       }
 
@@ -41,6 +54,12 @@ app.post("/api/chat", async (req, res) => {
         content: msg.content
       };
     });
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: "Chave da OpenAI não configurada."
+      });
+    }
 
     const response = await fetch(
       "https://api.openai.com/v1/responses",
@@ -91,19 +110,18 @@ Lembre-se de que você é um assistente virtual e não substitui acompanhamento 
       });
     }
 
-    res.json({ answer });
+    return res.json({ answer });
 
   } catch (error) {
     console.error("Erro no servidor:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Não foi possível processar sua mensagem."
     });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
+// Inicialização do servidor
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor OpenAI funcionando na porta ${PORT}`);
 });
